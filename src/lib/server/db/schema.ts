@@ -17,9 +17,9 @@ export const listings = pgTable("listings", {
   id: varchar("id", { length: 21 })
     .primaryKey()
     .$defaultFn(() => nanoid()),
-  imageUrl: text("image_url").notNull(),
-  title: text("title").notNull(),
-  description: text("description").notNull(),
+  imageUrls: text("image_urls").array().notNull(),
+  title: text("title"),
+  description: text("description"),
   category: text("category"),
   condition: text("condition"),
   brand: text("brand"),
@@ -31,7 +31,7 @@ export const listings = pgTable("listings", {
     precision: 10,
     scale: 2,
   }),
-  listingPrice: numeric("listing_price", { precision: 10, scale: 2 }).notNull(),
+  listingPrice: numeric("listing_price", { precision: 10, scale: 2 }),
   pricingRationale: text("pricing_rationale"),
   similarItemsSearchTerms: text("similar_items_search_terms"),
   userContext: text("user_context"),
