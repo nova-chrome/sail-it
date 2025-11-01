@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { PropsWithChildren } from "react";
+import { ModeToggle } from "~/components/mode-toggle";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -44,7 +45,7 @@ export default function RootLayout({ children }: PropsWithChildren) {
           <SidebarProvider>
             <AppSidebar />
             <SidebarInset>
-              <header className="flex h-16 shrink-0 items-center gap-2">
+              <header className="flex h-16 shrink-0 items-center gap-2 pr-4 justify-between">
                 <div className="flex items-center gap-2 px-4">
                   <SidebarTrigger className="-ml-1" />
                   <Separator
@@ -65,6 +66,7 @@ export default function RootLayout({ children }: PropsWithChildren) {
                     </BreadcrumbList>
                   </Breadcrumb>
                 </div>
+                <ModeToggle />
               </header>
               {/* <Header /> */}
               {children}
