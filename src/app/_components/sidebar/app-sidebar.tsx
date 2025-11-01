@@ -1,7 +1,4 @@
-"use client";
-
-import { useQuery } from "@tanstack/react-query";
-import { Command, Loader2 } from "lucide-react";
+import { Command } from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
 
@@ -14,7 +11,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "~/components/ui/sidebar";
-import { useTRPC } from "~/lib/client/trpc/client";
 import { NavListings } from "./nav-listings";
 import { NavUser } from "./nav-user";
 
@@ -27,11 +23,6 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const trpc = useTRPC();
-  const { data: listings, isLoading } = useQuery(
-    trpc.listings.getAll.queryOptions()
-  );
-
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
@@ -52,13 +43,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        {isLoading ? (
-          <div className="flex items-center justify-center p-4">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : (
-          <NavListings listings={listings ?? []} />
-        )}
+        <NavListings />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />
