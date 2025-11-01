@@ -17,6 +17,51 @@ export default function Home() {
   const [item, setItem] = useState<Item | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aiSuggestedContext, setAiSuggestedContext] = useState<string | null>(null);
+  const [isGeneratingContext, setIsGeneratingContext] = useState(false);
+  const [showContextSuggestion, setShowContextSuggestion] = useState(false);
+
+  const handleImageUploaded = async (url: string) => {
+    setImageUrl(url);
+    setError(null);
+    setShowContextSuggestion(false);
+    setAiSuggestedContext(null);
+    
+    // Automatically generate context suggestion
+    setIsGeneratingContext(true);
+    try {
+      const response = await fetch("/api/suggest-context", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ imageUrl: url }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAiSuggestedContext(data.suggestion);
+        setShowContextSuggestion(true);
+      }
+    } catch (error) {
+      console.error("Context suggestion error:", error);
+      // Fail silently - user can still add context manually
+    } finally {
+      setIsGeneratingContext(false);
+    }
+  };
+
+  const handleAcceptContext = () => {
+    if (aiSuggestedContext) {
+      setUserContext(aiSuggestedContext);
+      setShowContextSuggestion(false);
+    }
+  };
+
+  const handleRejectContext = () => {
+    setShowContextSuggestion(false);
+    setAiSuggestedContext(null);
+  };
 
   const handleAnalyze = async () => {
     if (!imageUrl) {
@@ -60,6 +105,9 @@ export default function Home() {
     setUserContext("");
     setItem(null);
     setError(null);
+    setAiSuggestedContext(null);
+    setShowContextSuggestion(false);
+    setIsGeneratingContext(false);
   };
 
   return (
@@ -83,7 +131,7 @@ export default function Home() {
               </CardHeader>
               <CardContent>
                 <ImageUpload
-                  onImageUploaded={setImageUrl}
+                  onImageUploaded={handleImageUploaded}
                   currentImageUrl={imageUrl || undefined}
                 />
               </CardContent>
@@ -98,6 +146,42 @@ export default function Home() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {isGeneratingContext && (
+                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground p-4 bg-muted/50 rounded-md">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      AI is analyzing your image to suggest context...
+                    </div>
+                  )}
+                  
+                  {showContextSuggestion && aiSuggestedContext && (
+                    <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                      <div>
+                        <Label className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                          AI Suggested Context
+                        </Label>
+                        <p className="mt-2 text-sm text-blue-800 dark:text-blue-200">
+                          {aiSuggestedContext}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleAcceptContext}
+                          size="sm"
+                          variant="default"
+                        >
+                          Accept & Use This
+                        </Button>
+                        <Button
+                          onClick={handleRejectContext}
+                          size="sm"
+                          variant="outline"
+                        >
+                          No Thanks
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div>
                     <Label htmlFor="user-context">
                       Additional Context (e.g., condition, brand, year purchased, etc.)
