@@ -1,6 +1,12 @@
 "use client";
 
-import { ChevronDown, CloudUpload, TriangleAlert, XIcon } from "lucide-react";
+import {
+  ChevronDown,
+  CloudUpload,
+  Loader2,
+  TriangleAlert,
+  XIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
@@ -44,7 +50,8 @@ export function ImageUpload({
   const [images, setImages] = useState<ImageFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
-  const [isImagesOpen, setIsImagesOpen] = useState(false);
+  const [isImagesOpen, setIsImagesOpen] = useState(true);
+  const isControlled = value !== undefined;
 
   // Sync internal state with external value (for controlled mode)
   useEffect(() => {
@@ -57,158 +64,178 @@ export function ImageUpload({
     }
   }, [value]);
 
-  const validateFile = (file: File): string | null => {
-    if (!file.type.startsWith("image/")) {
-      return "File must be an image";
+  // Auto-open collapsible when images are uploading
+  useEffect(() => {
+    const hasUploadingImages = images.some((img) => img.status === "uploading");
+    if (hasUploadingImages) {
+      setIsImagesOpen(true);
     }
-    if (file.size > maxSize) {
-      return `File size must be less than ${(maxSize / 1024 / 1024).toFixed(
-        1
-      )}MB`;
+  }, [images]);
+
+  // Notify parent when all uploads are complete
+  useEffect(() => {
+    if (
+      images.length > 0 &&
+      images.every((img) => img.status === "completed")
+    ) {
+      onUploadComplete?.(images);
     }
-    if (images.length >= maxFiles) {
-      return `Maximum ${maxFiles} files allowed`;
-    }
-    return null;
-  };
+  }, [images, onUploadComplete]);
+
+  const validateFile = useCallback(
+    (file: File, currentImagesCount: number): string | null => {
+      if (!file.type.startsWith("image/")) {
+        return "File must be an image";
+      }
+      if (file.size > maxSize) {
+        return `File size must be less than ${(maxSize / 1024 / 1024).toFixed(
+          1
+        )}MB`;
+      }
+      if (currentImagesCount >= maxFiles) {
+        return `Maximum ${maxFiles} files allowed`;
+      }
+      return null;
+    },
+    [maxSize, maxFiles]
+  );
+
+  const uploadToBlob = useCallback(
+    async (imageFile: ImageFile) => {
+      const updateImage = (updater: (img: ImageFile) => ImageFile) => {
+        setImages((prev) => {
+          const updatedImages = prev.map((img) =>
+            img.id === imageFile.id ? updater(img) : img
+          );
+          // Notify parent in controlled mode after state update
+          if (isControlled) {
+            queueMicrotask(() => onImagesChange?.(updatedImages));
+          }
+          return updatedImages;
+        });
+      };
+
+      try {
+        const formData = new FormData();
+        formData.append("file", imageFile.file);
+
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener("progress", (e) => {
+          if (e.lengthComputable) {
+            const progress = (e.loaded / e.total) * 100;
+            updateImage((img) => ({ ...img, progress }));
+          }
+        });
+
+        xhr.addEventListener("load", () => {
+          if (xhr.status === 200) {
+            const response = JSON.parse(xhr.responseText);
+            updateImage((img) => ({
+              ...img,
+              progress: 100,
+              status: "completed" as const,
+              url: response.url,
+            }));
+          } else {
+            updateImage((img) => ({
+              ...img,
+              status: "error" as const,
+              error: "Upload failed",
+            }));
+          }
+        });
+
+        xhr.addEventListener("error", () => {
+          updateImage((img) => ({
+            ...img,
+            status: "error" as const,
+            error: "Network error",
+          }));
+        });
+
+        xhr.open("POST", "/api/upload");
+        xhr.send(formData);
+      } catch (error) {
+        updateImage((img) => ({
+          ...img,
+          status: "error" as const,
+          error: error instanceof Error ? error.message : "Upload failed",
+        }));
+      }
+    },
+    [isControlled, onImagesChange]
+  );
 
   const addImages = useCallback(
     (files: FileList | File[]) => {
-      const newImages: ImageFile[] = [];
-      const newErrors: string[] = [];
+      setImages((prev) => {
+        const newImages: ImageFile[] = [];
+        const newErrors: string[] = [];
 
-      Array.from(files).forEach((file) => {
-        const error = validateFile(file);
-        if (error) {
-          newErrors.push(`${file.name}: ${error}`);
-          return;
+        Array.from(files).forEach((file) => {
+          const error = validateFile(file, prev.length + newImages.length);
+          if (error) {
+            newErrors.push(`${file.name}: ${error}`);
+            return;
+          }
+
+          const imageFile: ImageFile = {
+            id: `${Date.now()}-${Math.random()}`,
+            file,
+            preview: URL.createObjectURL(file),
+            progress: 0,
+            status: "uploading",
+          };
+
+          newImages.push(imageFile);
+        });
+
+        if (newErrors.length > 0) {
+          setErrors((prevErrors) => [...prevErrors, ...newErrors]);
         }
 
-        const imageFile: ImageFile = {
-          id: `${Date.now()}-${Math.random()}`,
-          file,
-          preview: URL.createObjectURL(file),
-          progress: 0,
-          status: "uploading",
-        };
+        if (newImages.length > 0) {
+          const updatedImages = [...prev, ...newImages];
 
-        newImages.push(imageFile);
+          // Notify parent in controlled mode after state update
+          if (isControlled) {
+            queueMicrotask(() => onImagesChange?.(updatedImages));
+          }
+
+          // Upload images to Vercel Blob
+          newImages.forEach((imageFile) => {
+            uploadToBlob(imageFile);
+          });
+
+          return updatedImages;
+        }
+
+        return prev;
       });
-
-      if (newErrors.length > 0) {
-        setErrors((prev) => [...prev, ...newErrors]);
-      }
-
-      if (newImages.length > 0) {
-        const updatedImages = [...images, ...newImages];
-        setImages(updatedImages);
-        onImagesChange?.(updatedImages);
-
-        // Upload images to Vercel Blob
-        newImages.forEach((imageFile) => {
-          uploadToBlob(imageFile);
-        });
-      }
     },
-    [images, maxSize, maxFiles, onImagesChange]
+    [isControlled, onImagesChange, validateFile, uploadToBlob]
   );
 
-  const uploadToBlob = async (imageFile: ImageFile) => {
-    try {
-      const formData = new FormData();
-      formData.append("file", imageFile.file);
-
-      const xhr = new XMLHttpRequest();
-
-      xhr.upload.addEventListener("progress", (e) => {
-        if (e.lengthComputable) {
-          const progress = (e.loaded / e.total) * 100;
-          setImages((prev) =>
-            prev.map((img) =>
-              img.id === imageFile.id ? { ...img, progress } : img
-            )
-          );
+  const removeImage = useCallback(
+    (id: string) => {
+      setImages((prev) => {
+        const image = prev.find((img) => img.id === id);
+        if (image) {
+          URL.revokeObjectURL(image.preview);
         }
-      });
+        const updatedImages = prev.filter((img) => img.id !== id);
 
-      xhr.addEventListener("load", () => {
-        if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText);
-          setImages((prev) => {
-            const updatedImages = prev.map((img) =>
-              img.id === imageFile.id
-                ? {
-                    ...img,
-                    progress: 100,
-                    status: "completed" as const,
-                    url: response.url,
-                  }
-                : img
-            );
-
-            // Notify parent and check if all uploads are complete
-            onImagesChange?.(updatedImages);
-            if (updatedImages.every((img) => img.status === "completed")) {
-              onUploadComplete?.(updatedImages);
-            }
-
-            return updatedImages;
-          });
-        } else {
-          setImages((prev) =>
-            prev.map((img) =>
-              img.id === imageFile.id
-                ? {
-                    ...img,
-                    status: "error" as const,
-                    error: "Upload failed",
-                  }
-                : img
-            )
-          );
+        // Notify parent in controlled mode after state update
+        if (isControlled) {
+          queueMicrotask(() => onImagesChange?.(updatedImages));
         }
+
+        return updatedImages;
       });
-
-      xhr.addEventListener("error", () => {
-        setImages((prev) =>
-          prev.map((img) =>
-            img.id === imageFile.id
-              ? {
-                  ...img,
-                  status: "error" as const,
-                  error: "Network error",
-                }
-              : img
-          )
-        );
-      });
-
-      xhr.open("POST", "/api/upload");
-      xhr.send(formData);
-    } catch (error) {
-      setImages((prev) =>
-        prev.map((img) =>
-          img.id === imageFile.id
-            ? {
-                ...img,
-                status: "error" as const,
-                error: error instanceof Error ? error.message : "Upload failed",
-              }
-            : img
-        )
-      );
-    }
-  };
-
-  const removeImage = useCallback((id: string) => {
-    setImages((prev) => {
-      const image = prev.find((img) => img.id === id);
-      if (image) {
-        URL.revokeObjectURL(image.preview);
-      }
-      return prev.filter((img) => img.id !== id);
-    });
-  }, []);
+    },
+    [isControlled, onImagesChange]
+  );
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -303,6 +330,23 @@ export function ImageUpload({
                     className="w-full h-full object-cover absolute inset-0"
                     alt={`Product view ${index + 1}`}
                   />
+
+                  {/* Loading Overlay */}
+                  {imageFile.status === "uploading" && (
+                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-20">
+                      <Loader2 className="size-8 animate-spin text-primary" />
+                    </div>
+                  )}
+
+                  {/* Error Overlay */}
+                  {imageFile.status === "error" && (
+                    <div className="absolute inset-0 bg-destructive/10 backdrop-blur-sm flex flex-col items-center justify-center z-20">
+                      <TriangleAlert className="size-8 text-destructive mb-2" />
+                      <span className="text-xs font-medium text-destructive">
+                        {imageFile.error || "Upload failed"}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Remove Button Overlay */}
                   <Button
