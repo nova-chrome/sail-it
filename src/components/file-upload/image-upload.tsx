@@ -1,13 +1,18 @@
 "use client";
 
-import { CloudUpload, TriangleAlert, XIcon } from "lucide-react";
+import { ChevronDown, CloudUpload, TriangleAlert, XIcon } from "lucide-react";
 import { useCallback, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "~/components/ui/collapsible";
 import { cn } from "~/lib/utils";
 
-interface ImageFile {
+export interface ImageFile {
   id: string;
   file: File;
   preview: string;
@@ -25,7 +30,7 @@ interface ImageUploadProps {
   onUploadComplete?: (images: ImageFile[]) => void;
 }
 
-export default function ImageUpload({
+export function ImageUpload({
   maxFiles = 10,
   maxSize = 2 * 1024 * 1024, // 2MB
   accept = "image/*",
@@ -36,6 +41,7 @@ export default function ImageUpload({
   const [images, setImages] = useState<ImageFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const [isImagesOpen, setIsImagesOpen] = useState(false);
 
   const validateFile = (file: File): string | null => {
     if (!file.type.startsWith("image/")) {
@@ -194,34 +200,59 @@ export default function ImageUpload({
 
   return (
     <div className={cn("w-full max-w-4xl", className)}>
-      {/* Image Grid */}
+      {/* Collapsible Image Grid */}
       {images.length > 0 && (
-        <div className="mb-6">
-          <div className="grid grid-cols-4 gap-2.5">
-            {images.map((imageFile, index) => (
-              <Card
-                key={imageFile.id}
-                className="aspect-square overflow-hidden rounded-md bg-accent/50 shadow-none shrink-0 relative group p-0"
+        <Collapsible
+          open={isImagesOpen}
+          onOpenChange={setIsImagesOpen}
+          className="mb-6"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-2 p-0 h-auto hover:bg-transparent"
               >
-                <img
-                  src={imageFile.preview}
-                  className="w-full h-full object-cover absolute inset-0"
-                  alt={`Product view ${index + 1}`}
+                <ChevronDown
+                  className={cn(
+                    "size-4 transition-transform duration-200",
+                    isImagesOpen ? "rotate-0" : "-rotate-90"
+                  )}
                 />
-
-                {/* Remove Button Overlay */}
-                <Button
-                  onClick={() => removeImage(imageFile.id)}
-                  variant="outline"
-                  size="icon"
-                  className="shadow-sm absolute top-2 right-2 size-6 opacity-0 group-hover:opacity-100 rounded-full z-10"
-                >
-                  <XIcon className="size-3.5" />
-                </Button>
-              </Card>
-            ))}
+                <span className="text-sm font-medium">
+                  Uploaded Images ({images.length})
+                </span>
+              </Button>
+            </CollapsibleTrigger>
           </div>
-        </div>
+          <CollapsibleContent>
+            <div className="grid grid-cols-4 gap-2.5">
+              {images.map((imageFile, index) => (
+                <Card
+                  key={imageFile.id}
+                  className="aspect-square overflow-hidden rounded-md bg-accent/50 shadow-none shrink-0 relative group p-0"
+                >
+                  <img
+                    src={imageFile.preview}
+                    className="w-full h-full object-cover absolute inset-0"
+                    alt={`Product view ${index + 1}`}
+                  />
+
+                  {/* Remove Button Overlay */}
+                  <Button
+                    onClick={() => removeImage(imageFile.id)}
+                    variant="outline"
+                    size="icon"
+                    className="shadow-sm absolute top-2 right-2 size-6 opacity-0 group-hover:opacity-100 rounded-full z-10"
+                  >
+                    <XIcon className="size-3.5" />
+                  </Button>
+                </Card>
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       )}
 
       {/* Upload Area */}
