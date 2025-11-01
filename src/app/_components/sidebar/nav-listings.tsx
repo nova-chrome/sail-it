@@ -1,7 +1,7 @@
 "use client";
 
 import { differenceInDays, format, formatDistanceToNow } from "date-fns";
-import { Eye, Loader2, MoreHorizontal, Package, Trash2 } from "lucide-react";
+import { Eye, Loader2, MoreHorizontal, Trash2 } from "lucide-react";
 
 import { Badge } from "~/components/ui/badge";
 import {
@@ -52,7 +52,6 @@ export function NavListings({ listings }: { listings: Listing[] }) {
             <SidebarMenuItem key={listing.id}>
               <SidebarMenuButton asChild className="h-auto py-2">
                 <a href={`/listings/${listing.id}`}>
-                  <Package className="shrink-0" />
                   <div className="flex flex-col gap-1 overflow-hidden flex-1">
                     <span className="truncate">
                       {listing.title || "Untitled Listing"}
@@ -76,7 +75,7 @@ export function NavListings({ listings }: { listings: Listing[] }) {
               </SidebarMenuButton>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <SidebarMenuAction showOnHover>
+                  <SidebarMenuAction className="top-1/2! -translate-y-1/2">
                     <MoreHorizontal />
                     <span className="sr-only">More</span>
                   </SidebarMenuAction>
