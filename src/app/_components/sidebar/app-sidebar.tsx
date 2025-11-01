@@ -1,17 +1,6 @@
 "use client";
 
-import {
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
-  LifeBuoy,
-  Map,
-  PieChart,
-  Send,
-  Settings2,
-  SquareTerminal,
-} from "lucide-react";
+import { Command } from "lucide-react";
 import * as React from "react";
 
 import {
@@ -23,10 +12,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "~/components/ui/sidebar";
-import { NavMain } from "./nav-main";
-import { NavProjects } from "./nav-projects";
-import { NavSecondary } from "./nav-secondary";
 import { NavUser } from "./nav-user";
+import { NavChats } from "./nav-chats";
 
 const data = {
   user: {
@@ -34,120 +21,36 @@ const data = {
     email: "m@example.com",
     avatar: "/avatars/shadcn.jpg",
   },
-  navMain: [
+  chats: [
     {
-      title: "Playground",
+      id: "1",
+      title: "How to implement authentication",
       url: "#",
-      icon: SquareTerminal,
-      isActive: true,
-      items: [
-        {
-          title: "History",
-          url: "#",
-        },
-        {
-          title: "Starred",
-          url: "#",
-        },
-        {
-          title: "Settings",
-          url: "#",
-        },
-      ],
+      timestamp: "2 hours ago",
     },
     {
-      title: "Models",
+      id: "2",
+      title: "Database schema design discussion",
       url: "#",
-      icon: Bot,
-      items: [
-        {
-          title: "Genesis",
-          url: "#",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-        },
-      ],
+      timestamp: "Yesterday",
     },
     {
-      title: "Documentation",
+      id: "3",
+      title: "React state management best practices",
       url: "#",
-      icon: BookOpen,
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
+      timestamp: "2 days ago",
     },
     {
-      title: "Settings",
+      id: "4",
+      title: "API integration troubleshooting",
       url: "#",
-      icon: Settings2,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Support",
-      url: "#",
-      icon: LifeBuoy,
+      timestamp: "3 days ago",
     },
     {
-      title: "Feedback",
+      id: "5",
+      title: "TypeScript generics explained",
       url: "#",
-      icon: Send,
-    },
-  ],
-  projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
+      timestamp: "1 week ago",
     },
   ],
 };
@@ -173,9 +76,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavChats chats={data.chats} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />

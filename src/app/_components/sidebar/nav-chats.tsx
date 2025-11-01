@@ -1,11 +1,10 @@
 "use client";
 
 import {
-  Folder,
+  MessageSquare,
   MoreHorizontal,
-  Share,
+  Pencil,
   Trash2,
-  type LucideIcon,
 } from "lucide-react";
 
 import {
@@ -25,27 +24,33 @@ import {
   useSidebar,
 } from "~/components/ui/sidebar";
 
-export function NavProjects({
-  projects,
+export function NavChats({
+  chats,
 }: {
-  projects: {
-    name: string;
+  chats: {
+    id: string;
+    title: string;
     url: string;
-    icon: LucideIcon;
+    timestamp: string;
   }[];
 }) {
   const { isMobile } = useSidebar();
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel>Projects</SidebarGroupLabel>
+      <SidebarGroupLabel>Recent Chats</SidebarGroupLabel>
       <SidebarMenu>
-        {projects.map((item) => (
-          <SidebarMenuItem key={item.name}>
+        {chats.map((chat) => (
+          <SidebarMenuItem key={chat.id}>
             <SidebarMenuButton asChild>
-              <a href={item.url}>
-                <item.icon />
-                <span>{item.name}</span>
+              <a href={chat.url}>
+                <MessageSquare />
+                <div className="flex flex-col gap-0.5 overflow-hidden">
+                  <span className="truncate">{chat.title}</span>
+                  <span className="text-xs text-muted-foreground truncate">
+                    {chat.timestamp}
+                  </span>
+                </div>
               </a>
             </SidebarMenuButton>
             <DropdownMenu>
@@ -61,17 +66,17 @@ export function NavProjects({
                 align={isMobile ? "end" : "start"}
               >
                 <DropdownMenuItem>
-                  <Folder className="text-muted-foreground" />
-                  <span>View Project</span>
+                  <MessageSquare className="text-muted-foreground" />
+                  <span>Open Chat</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
-                  <Share className="text-muted-foreground" />
-                  <span>Share Project</span>
+                  <Pencil className="text-muted-foreground" />
+                  <span>Rename</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <Trash2 className="text-muted-foreground" />
-                  <span>Delete Project</span>
+                  <span>Delete Chat</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -80,10 +85,11 @@ export function NavProjects({
         <SidebarMenuItem>
           <SidebarMenuButton>
             <MoreHorizontal />
-            <span>More</span>
+            <span>View All Chats</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
     </SidebarGroup>
   );
 }
+
