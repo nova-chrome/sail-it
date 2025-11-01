@@ -1,4 +1,5 @@
 import { put } from "@vercel/blob";
+import { nanoid } from "nanoid";
 import { NextRequest, NextResponse } from "next/server";
 import { env } from "~/env";
 
@@ -13,7 +14,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    const blob = await put(file.name, file, {
+    // Generate a unique filename to allow multiple uploads of the same image
+    const extension = file.name.split(".").pop();
+    const uniqueFilename = `${nanoid()}.${extension}`;
+
+    const blob = await put(uniqueFilename, file, {
       access: "public",
       token: env.BLOB_READ_WRITE_TOKEN,
     });
