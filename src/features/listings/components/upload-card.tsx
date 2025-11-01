@@ -1,8 +1,9 @@
 "use client";
 
 import { useForm } from "@tanstack/react-form";
+import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { toast } from "sonner";
 import * as z from "zod";
 
 const formSchema = z.object({
@@ -22,10 +23,16 @@ import {
 } from "~/components/ui/card";
 import { Field, FieldDescription, FieldLabel } from "~/components/ui/field";
 import { Textarea } from "~/components/ui/textarea";
+import { useTRPC } from "~/lib/client/trpc/client";
+import { tryCatch } from "~/utils/try-catch";
 
 export function UploadCard() {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const trpc = useTRPC();
+
+  const createListingMutation = useMutation(
+    trpc.listings.create.mutationOptions()
+  );
 
   const form = useForm({
     defaultValues: {
@@ -36,45 +43,34 @@ export function UploadCard() {
       onSubmit: formSchema,
     },
     onSubmit: async ({ value }) => {
-      setIsSubmitting(true);
-      try {
-        // Extract image URLs from uploaded images
-        const imageUrls = value.images
-          .filter((img) => img.url && img.status === "completed")
-          .map((img) => img.url!);
+      // Extract image URLs from uploaded images
+      const imageUrls = value.images
+        .filter((img) => img.url && img.status === "completed")
+        .map((img) => img.url!);
 
-        if (imageUrls.length === 0) {
-          throw new Error("Please wait for images to finish uploading");
-        }
+      if (imageUrls.length === 0) {
+        toast.error("Please wait for images to finish uploading");
+        return;
+      }
 
-        // Create listing
-        const response = await fetch("/api/listings", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            imageUrls,
-            additionalContext: value.additionalContext,
-          }),
-        });
+      // Create listing using tRPC mutation
+      const { data: listing, error } = await tryCatch(
+        createListingMutation.mutateAsync({
+          imageUrls,
+          additionalContext: value.additionalContext,
+        })
+      );
 
-        if (!response.ok) {
-          throw new Error("Failed to create listing");
-        }
-
-        const listing = await response.json();
-
-        // Navigate to the listing page
-        router.push(`/listings/${listing.id}`);
-      } catch (error) {
+      if (error) {
         console.error("Submission error:", error);
-        alert(
+        toast.error(
           error instanceof Error ? error.message : "Failed to create listing"
         );
-      } finally {
-        setIsSubmitting(false);
+        return;
       }
+
+      // Navigate to the listing page
+      router.push(`/listings/${listing.id}`);
     },
   });
 
@@ -129,12 +125,18 @@ export function UploadCard() {
             type="button"
             variant="outline"
             onClick={() => form.reset()}
-            disabled={isSubmitting}
+            disabled={createListingMutation.isPending}
           >
             Reset
           </Button>
-          <Button type="submit" form="upload-item-form" disabled={isSubmitting}>
-            {isSubmitting ? "Creating Listing..." : "Start Listing"}
+          <Button
+            type="submit"
+            form="upload-item-form"
+            disabled={createListingMutation.isPending}
+          >
+            {createListingMutation.isPending
+              ? "Creating Listing..."
+              : "Start Listing"}
           </Button>
         </CardFooter>
       </form>
