@@ -1,23 +1,29 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { Button } from "~/components/ui/button";
+import { Loader2 } from "lucide-react";
+import Image from "next/image";
+import { useRef, useState } from "react";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { Upload, Loader2 } from "lucide-react";
-import Image from "next/image";
 
 type ImageUploadProps = {
   onImageUploaded: (url: string) => void;
   currentImageUrl?: string;
 };
 
-export function ImageUpload({ onImageUploaded, currentImageUrl }: ImageUploadProps) {
+export function ImageUpload({
+  onImageUploaded,
+  currentImageUrl,
+}: ImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
-  const [preview, setPreview] = useState<string | null>(currentImageUrl || null);
+  const [preview, setPreview] = useState<string | null>(
+    currentImageUrl || null
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -93,4 +99,3 @@ export function ImageUpload({ onImageUploaded, currentImageUrl }: ImageUploadPro
     </div>
   );
 }
-

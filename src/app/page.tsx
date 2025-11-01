@@ -1,14 +1,20 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
-import { Textarea } from "~/components/ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "~/components/ui/card";
 import { Label } from "~/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
-import { ImageUpload } from "~/features/items/components/ImageUpload";
-import { ItemDetails } from "~/features/items/components/ItemDetails";
-import { MarketplaceCopySection } from "~/features/items/components/MarketplaceCopySection";
-import { Loader2 } from "lucide-react";
+import { Textarea } from "~/components/ui/textarea";
+import { ImageUpload } from "~/features/items/components/image-upload";
+import { ItemDetails } from "~/features/items/components/item-details";
+import { MarketplaceCopySection } from "~/features/items/components/marketplace-copy-section";
 import type { Item } from "~/features/items/types/item";
 
 export default function Home() {
@@ -17,7 +23,9 @@ export default function Home() {
   const [item, setItem] = useState<Item | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [aiSuggestedContext, setAiSuggestedContext] = useState<string | null>(null);
+  const [aiSuggestedContext, setAiSuggestedContext] = useState<string | null>(
+    null
+  );
   const [isGeneratingContext, setIsGeneratingContext] = useState(false);
   const [showContextSuggestion, setShowContextSuggestion] = useState(false);
 
@@ -26,7 +34,7 @@ export default function Home() {
     setError(null);
     setShowContextSuggestion(false);
     setAiSuggestedContext(null);
-    
+
     // Automatically generate context suggestion
     setIsGeneratingContext(true);
     try {
@@ -93,7 +101,10 @@ export default function Home() {
       setItem(data);
     } catch (error) {
       console.error("Analysis error:", error);
-      const errorMessage = error instanceof Error ? error.message : "Failed to analyze image. Please try again.";
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to analyze image. Please try again.";
       setError(errorMessage);
     } finally {
       setIsAnalyzing(false);
@@ -116,7 +127,8 @@ export default function Home() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Sail It</h1>
           <p className="text-muted-foreground">
-            Upload a photo of your item and get AI-generated listing details ready for marketplaces
+            Upload a photo of your item and get AI-generated listing details
+            ready for marketplaces
           </p>
         </div>
 
@@ -142,7 +154,8 @@ export default function Home() {
                 <CardHeader>
                   <CardTitle>Step 2: Add Context (Optional)</CardTitle>
                   <CardDescription>
-                    Provide additional information about the item to help AI generate better listings
+                    Provide additional information about the item to help AI
+                    generate better listings
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -152,7 +165,7 @@ export default function Home() {
                       AI is analyzing your image to suggest context...
                     </div>
                   )}
-                  
+
                   {showContextSuggestion && aiSuggestedContext && (
                     <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md">
                       <div>
@@ -181,10 +194,11 @@ export default function Home() {
                       </div>
                     </div>
                   )}
-                  
+
                   <div>
                     <Label htmlFor="user-context">
-                      Additional Context (e.g., condition, brand, year purchased, etc.)
+                      Additional Context (e.g., condition, brand, year
+                      purchased, etc.)
                     </Label>
                     <Textarea
                       id="user-context"
