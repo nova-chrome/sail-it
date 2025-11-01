@@ -1,10 +1,11 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateObject } from "ai";
+import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { env } from "~/env";
 import { db } from "~/lib/server/db/drizzle";
-import { items } from "~/lib/server/db/schema";
+import { listings } from "~/lib/server/db/schema";
 
 export const runtime = "nodejs";
 
@@ -135,7 +136,7 @@ async function analyzeImageWithOpenAI(imageUrl: string, userContext?: string) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { imageUrl, userContext } = await request.json();
+    const { listingId, imageUrl, userContext } = await request.json();
 
     if (!imageUrl) {
       return NextResponse.json(
@@ -144,39 +145,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!listingId) {
+      return NextResponse.json(
+        { error: "Listing ID is required" },
+        { status: 400 }
+      );
+    }
+
     // Analyze image with OpenAI
     const analysis = await analyzeImageWithOpenAI(imageUrl, userContext);
 
-    // Save to database (fail gracefully if DB is unavailable)
-    let item;
-    try {
-      [item] = await db
-        .insert(items)
-        .values({
-          imageUrl,
-          title: analysis.title,
-          description: analysis.description,
-          category: analysis.category,
-          condition: analysis.condition,
-          brand: analysis.brand,
-          size: analysis.size,
-          color: analysis.color,
-          material: analysis.material,
-          keywords: analysis.keywords.join(", "),
-          estimatedOriginalPrice:
-            analysis.estimatedOriginalPrice?.toString() ?? null,
-          listingPrice: analysis.listingPrice.toString(),
-          pricingRationale: analysis.pricingRationale,
-          similarItemsSearchTerms: analysis.similarItemsSearchTerms.join(", "),
-          userContext: userContext || null,
-        })
-        .returning();
-    } catch (dbError) {
-      console.error("Database save error:", dbError);
-      // Return analysis anyway if DB save fails
-      item = {
-        id: `temp-${Date.now()}`,
-        imageUrl,
+    // Update the existing listing
+    const [updatedListing] = await db
+      .update(listings)
+      .set({
         title: analysis.title,
         description: analysis.description,
         category: analysis.category,
@@ -191,13 +173,19 @@ export async function POST(request: NextRequest) {
         listingPrice: analysis.listingPrice.toString(),
         pricingRationale: analysis.pricingRationale,
         similarItemsSearchTerms: analysis.similarItemsSearchTerms.join(", "),
-        userContext: userContext || null,
-        createdAt: new Date(),
         updatedAt: new Date(),
-      };
+      })
+      .where(eq(listings.id, listingId))
+      .returning();
+
+    if (!updatedListing) {
+      return NextResponse.json(
+        { error: "Listing not found" },
+        { status: 404 }
+      );
     }
 
-    return NextResponse.json(item);
+    return NextResponse.json(updatedListing);
   } catch (error) {
     console.error("Analysis error:", error);
     const errorMessage =
