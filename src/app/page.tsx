@@ -11,8 +11,8 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { Label } from "~/components/ui/label";
-import { Textarea } from "~/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import { Textarea } from "~/components/ui/textarea";
 import { ImageUpload } from "~/features/items/components/image-upload";
 import { ItemDetails } from "~/features/items/components/item-details";
 import { MarketplaceCopySection } from "~/features/items/components/marketplace-copy-section";
@@ -125,7 +125,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="mb-8">
+        <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold mb-2">Sail It</h1>
           <p className="text-muted-foreground">
             Upload a photo of your item and get AI-generated listing details
@@ -134,7 +134,7 @@ export default function Home() {
         </div>
 
         <Tabs defaultValue="simple" className="mb-6">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsList className="grid w-full max-w-md grid-cols-2 mx-auto">
             <TabsTrigger value="simple">Simple Mode</TabsTrigger>
             <TabsTrigger value="chat">Chat Mode</TabsTrigger>
           </TabsList>
