@@ -214,9 +214,7 @@ export default function ListingPage() {
                   )}
                   {listing.material && (
                     <div className="border rounded-lg p-4">
-                      <p className="text-sm text-muted-foreground">
-                        Material
-                      </p>
+                      <p className="text-sm text-muted-foreground">Material</p>
                       <p className="font-semibold">{listing.material}</p>
                     </div>
                   )}
@@ -304,4 +302,3 @@ export default function ListingPage() {
     </div>
   );
 }
-
