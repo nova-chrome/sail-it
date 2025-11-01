@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1761967004946,
+      "tag": "0000_warm_omega_flight",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1761968250590,
+      "tag": "0001_unknown_veda",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1761968369192,
+      "tag": "0002_typical_blue_blade",
+      "breakpoints": true
+    }
+  ]
+}
