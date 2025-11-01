@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
-import { UploadCard } from "~/features/simple/components/upload-card";
+import { UploadCard } from "~/features/listings/components/upload-card";
 
 export default function Home() {
   return (
