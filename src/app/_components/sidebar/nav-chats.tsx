@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  MessageSquare,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
-} from "lucide-react";
+import { MessageSquare, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 import {
   DropdownMenu,
@@ -39,12 +34,12 @@ export function NavChats({
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       <SidebarGroupLabel>Recent Chats</SidebarGroupLabel>
-      <SidebarMenu>
+      <SidebarMenu className="gap-2">
         {chats.map((chat) => (
           <SidebarMenuItem key={chat.id}>
-            <SidebarMenuButton asChild>
+            <SidebarMenuButton asChild className="h-auto py-2">
               <a href={chat.url}>
-                <MessageSquare />
+                <MessageSquare className="shrink-0" />
                 <div className="flex flex-col gap-0.5 overflow-hidden">
                   <span className="truncate">{chat.title}</span>
                   <span className="text-xs text-muted-foreground truncate">
@@ -82,14 +77,7 @@ export function NavChats({
             </DropdownMenu>
           </SidebarMenuItem>
         ))}
-        <SidebarMenuItem>
-          <SidebarMenuButton>
-            <MoreHorizontal />
-            <span>View All Chats</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
       </SidebarMenu>
     </SidebarGroup>
   );
 }
-
