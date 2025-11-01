@@ -1,17 +1,10 @@
 "use client";
 
-import {
-  CircleX,
-  CloudUpload,
-  ImageIcon,
-  TriangleAlert,
-  XIcon,
-} from "lucide-react";
+import { CloudUpload, TriangleAlert, XIcon } from "lucide-react";
 import { useCallback, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
-import { Progress } from "~/components/ui/progress";
 import { cn } from "~/lib/utils";
 
 interface ImageFile {
@@ -43,28 +36,6 @@ export default function ImageUpload({
   const [images, setImages] = useState<ImageFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
-  const [visibleDefaultImages, setVisibleDefaultImages] = useState([
-    {
-      id: "default-1",
-      src: "https://picsum.photos/400/300?random=1",
-      alt: "Product view 1",
-    },
-    {
-      id: "default-2",
-      src: "https://picsum.photos/400/300?random=2",
-      alt: "Product view 2",
-    },
-    {
-      id: "default-3",
-      src: "https://picsum.photos/400/300?random=3",
-      alt: "Product view 3",
-    },
-    {
-      id: "default-4",
-      src: "https://picsum.photos/400/300?random=4",
-      alt: "Product view 4",
-    },
-  ]);
 
   const validateFile = (file: File): string | null => {
     if (!file.type.startsWith("image/")) {
@@ -159,13 +130,6 @@ export default function ImageUpload({
   };
 
   const removeImage = useCallback((id: string) => {
-    // If it's a default image, remove it from visible defaults
-    if (id.startsWith("default-")) {
-      setVisibleDefaultImages((prev) => prev.filter((img) => img.id !== id));
-      return;
-    }
-
-    // Remove uploaded image
     setImages((prev) => {
       const image = prev.find((img) => img.id === id);
       if (image) {
@@ -230,45 +194,18 @@ export default function ImageUpload({
 
   return (
     <div className={cn("w-full max-w-4xl", className)}>
-      {/* Image Grid - Moved to top */}
-      <div className="mb-6">
-        <div className="grid grid-cols-4 gap-2.5">
-          {/* Always show all visible default images first */}
-          {visibleDefaultImages.map((defaultImg) => (
-            <Card
-              key={defaultImg.id}
-              className="flex items-center justify-center rounded-md bg-accent/50 shadow-none shrink-0 relative group"
-            >
-              <img
-                src={defaultImg.src}
-                className="h-[120px] w-full object-cover rounded-md"
-                alt={defaultImg.alt}
-              />
-
-              {/* Remove Button Overlay for default images too */}
-              <Button
-                onClick={() => removeImage(defaultImg.id)}
-                variant="outline"
-                size="icon"
-                className="shadow-sm absolute top-2 right-2 size-6 opacity-0 group-hover:opacity-100 rounded-full"
-              >
-                <XIcon className="size-3.5" />
-              </Button>
-            </Card>
-          ))}
-        </div>
-
-        {/* Show uploaded images in a separate grid below */}
-        {images.length > 0 && (
-          <div className="grid grid-cols-4 gap-2.5 mt-4">
+      {/* Image Grid */}
+      {images.length > 0 && (
+        <div className="mb-6">
+          <div className="grid grid-cols-4 gap-2.5">
             {images.map((imageFile, index) => (
               <Card
                 key={imageFile.id}
-                className="flex items-center justify-center rounded-md bg-accent/50 shadow-none shrink-0 relative group"
+                className="aspect-square overflow-hidden rounded-md bg-accent/50 shadow-none shrink-0 relative group p-0"
               >
                 <img
                   src={imageFile.preview}
-                  className="h-[120px] w-full object-cover rounded-md"
+                  className="w-full h-full object-cover absolute inset-0"
                   alt={`Product view ${index + 1}`}
                 />
 
@@ -277,15 +214,15 @@ export default function ImageUpload({
                   onClick={() => removeImage(imageFile.id)}
                   variant="outline"
                   size="icon"
-                  className="shadow-sm absolute top-2 end-2 size-6 opacity-0 group-hover:opacity-100 rounded-full"
+                  className="shadow-sm absolute top-2 right-2 size-6 opacity-0 group-hover:opacity-100 rounded-full z-10"
                 >
                   <XIcon className="size-3.5" />
                 </Button>
               </Card>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Upload Area */}
       <Card
@@ -315,54 +252,6 @@ export default function ImageUpload({
           </Button>
         </CardContent>
       </Card>
-
-      {/* Upload Progress Cards */}
-      {images.length > 0 && (
-        <div className="mt-6 space-y-3">
-          {images.map((imageFile) => (
-            <Card key={imageFile.id} className="shadow-none rounded-md">
-              <CardContent className="flex items-center gap-2 p-3">
-                <div className="flex items-center justify-center size-[32px] rounded-md border border-border shrink-0">
-                  <ImageIcon className="size-4 text-muted-foreground" />
-                </div>
-                <div className="flex flex-col gap-1.5 w-full">
-                  <div className="flex items-center justify-between gap-2.5 -mt-2 w-full">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-xs text-foreground font-medium leading-none">
-                        {imageFile.file.name}
-                      </span>
-                      <span className="text-xs text-muted-foreground font-normal leading-none">
-                        {formatBytes(imageFile.file.size)}
-                      </span>
-                      {imageFile.status === "uploading" && (
-                        <p className="text-xs text-muted-foreground">
-                          Uploading... {Math.round(imageFile.progress)}%
-                        </p>
-                      )}
-                    </div>
-                    <Button
-                      onClick={() => removeImage(imageFile.id)}
-                      variant="ghost"
-                      size="icon"
-                      className="size-6"
-                    >
-                      <CircleX className="size-3.5" />
-                    </Button>
-                  </div>
-
-                  <Progress
-                    value={imageFile.progress}
-                    className={cn(
-                      "h-1 transition-all duration-300",
-                      "[&>div]:bg-zinc-950 dark:[&>div]:bg-zinc-50"
-                    )}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
 
       {/* Error Messages */}
       {errors.length > 0 && (
