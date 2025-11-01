@@ -15,6 +15,13 @@
       "when": 1761984240170,
       "tag": "0001_nasty_speed",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1761987357236,
+      "tag": "0002_even_tomorrow_man",
+      "breakpoints": true
     }
   ]
 }

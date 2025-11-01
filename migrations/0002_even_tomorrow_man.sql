@@ -1,0 +1,1 @@
+ALTER TABLE "sail_it_listings" ADD COLUMN "status" text DEFAULT 'pending' NOT NULL;
