@@ -9,10 +9,12 @@ const formSchema = z.object({
 });
 
 import { ImageFile, ImageUpload } from "~/components/file-upload/image-upload";
+import { Button } from "~/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
@@ -35,21 +37,21 @@ export function UploadCard() {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Upload Item Photo</CardTitle>
-        <CardDescription>
-          Take or upload clear photos of the item you want to sell
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <form
-          id="upload-item-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            form.handleSubmit();
-          }}
-          className="flex flex-col gap-4"
-        >
+      <form
+        id="upload-item-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          form.handleSubmit();
+        }}
+        className="flex flex-col gap-4"
+      >
+        <CardHeader>
+          <CardTitle>Upload Listing Photos</CardTitle>
+          <CardDescription>
+            Take or upload clear photos of the item you want to sell
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
           <form.Field name="images">
             {(field) => (
               <ImageUpload
@@ -77,8 +79,16 @@ export function UploadCard() {
               </Field>
             )}
           </form.Field>
-        </form>
-      </CardContent>
+        </CardContent>
+        <CardFooter className="justify-end gap-2">
+          <Button type="button" variant="outline" onClick={() => form.reset()}>
+            Reset
+          </Button>
+          <Button type="submit" form="upload-item-form">
+            Start Listing
+          </Button>
+        </CardFooter>
+      </form>
     </Card>
   );
 }
