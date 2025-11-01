@@ -1,7 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { TRPCError } from "@trpc/server";
 import { generateObject } from "ai";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { listings } from "~/lib/server/db/schema";
 import { createTRPCRouter, publicProcedure } from "~/lib/server/trpc/trpc";
@@ -16,7 +16,7 @@ const analysisSchema = z.object({
   description: z
     .string()
     .describe(
-      "A detailed description (150-300 words) that highlights key features, condition, dimensions, materials, any defects, and why someone would want it"
+      "A conversational, friendly description (150-300 words) written in first-person as if the seller is personally describing the item. Should sound natural and casual like posting to Facebook or OfferUp - use contractions, casual language, and personal touches while covering key details, condition, features, any flaws, and why someone would love it"
     ),
   category: z
     .string()
@@ -106,13 +106,13 @@ Your goal is to provide complete, ready-to-use information so the seller doesn't
 
 Guidelines:
 - Title: Create a compelling, SEO-friendly title (60-80 characters) that includes brand/model if visible. Make it searchable and attractive.
-- Description: Write a detailed description (150-300 words) that mentions:
-  * Exact condition and any wear/defects
-  * Dimensions and size details
-  * Materials and construction
-  * Brand/model information if visible
-  * Why someone would want this item
-  * Any notable features or history
+- Description: Write a conversational, friendly description (150-300 words) in first-person as if you're the seller casually describing the item to a friend. Use natural language, contractions (I'm, it's, there's), and a personal tone like you'd use on Facebook Marketplace or OfferUp. Include:
+  * Personal context if appropriate ("Used this in my home office for 2 years", "My kids outgrew this")
+  * Honest condition description with any wear/defects mentioned naturally
+  * Key details like dimensions, size, materials, brand/model
+  * Why someone would love this item
+  * Casual sign-off phrases like "Feel free to message with questions!" or "Cash or Venmo works!"
+  * Avoid overly formal or retail-style language - write like a real person selling their stuff
 - Category: Choose the most appropriate marketplace category from common options (Electronics, Furniture, Clothing & Accessories, Home & Garden, Sports & Outdoors, Toys & Games, Books & Media, Automotive Parts, Tools, Collectibles, etc.)
 - Condition: Assess honestly (New, Like New, Excellent, Good, Fair, or Poor)
 - Brand: Identify brand if visible on the item, packaging, or labels
@@ -184,6 +184,22 @@ const analyzeInput = z.object({
 });
 
 export const listingsRouter = createTRPCRouter({
+  getAll: publicProcedure.query(async ({ ctx }) => {
+    const { data, error } = await tryCatch(
+      ctx.db.select().from(listings).orderBy(desc(listings.createdAt))
+    );
+
+    if (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch listings",
+        cause: error,
+      });
+    }
+
+    return data;
+  }),
+
   create: publicProcedure
     .input(createListingInput)
     .mutation(async ({ ctx, input }) => {
