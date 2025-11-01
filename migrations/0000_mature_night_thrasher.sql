@@ -1,10 +1,19 @@
-CREATE TABLE "sail_it_items" (
+CREATE TABLE "sail_it_listings" (
 	"id" varchar(21) PRIMARY KEY NOT NULL,
 	"image_url" text NOT NULL,
 	"title" text NOT NULL,
 	"description" text NOT NULL,
+	"category" text,
+	"condition" text,
+	"brand" text,
+	"size" text,
+	"color" text,
+	"material" text,
+	"keywords" text,
 	"estimated_original_price" numeric(10, 2),
 	"listing_price" numeric(10, 2) NOT NULL,
+	"pricing_rationale" text,
+	"similar_items_search_terms" text,
 	"user_context" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
