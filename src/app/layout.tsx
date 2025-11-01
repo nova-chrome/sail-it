@@ -28,6 +28,7 @@ export default function RootLayout({ children }: PropsWithChildren) {
     <html lang="en" suppressHydrationWarning className="bg-sidebar">
       <body
         className={cn(geistSans.variable, geistMono.variable, "antialiased")}
+        suppressHydrationWarning
       >
         <Providers>
           <SidebarProvider>
