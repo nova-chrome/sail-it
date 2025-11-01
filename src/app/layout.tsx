@@ -3,10 +3,10 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { PropsWithChildren } from "react";
 import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
 import { cn } from "~/lib/utils";
+import { Providers } from "./_components/providers";
 import { AppHeader } from "./_components/sidebar/app-header";
 import { AppSidebar } from "./_components/sidebar/app-sidebar";
 import "./globals.css";
-import { Providers } from "./providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
