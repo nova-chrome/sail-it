@@ -1,6 +1,8 @@
 "use client";
 
 import { useForm } from "@tanstack/react-form";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import * as z from "zod";
 
 const formSchema = z.object({
@@ -22,6 +24,9 @@ import { Field, FieldDescription, FieldLabel } from "~/components/ui/field";
 import { Textarea } from "~/components/ui/textarea";
 
 export function UploadCard() {
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const form = useForm({
     defaultValues: {
       images: [] as ImageFile[],
@@ -31,7 +36,45 @@ export function UploadCard() {
       onSubmit: formSchema,
     },
     onSubmit: async ({ value }) => {
-      console.log(value);
+      setIsSubmitting(true);
+      try {
+        // Extract image URLs from uploaded images
+        const imageUrls = value.images
+          .filter((img) => img.url && img.status === "completed")
+          .map((img) => img.url!);
+
+        if (imageUrls.length === 0) {
+          throw new Error("Please wait for images to finish uploading");
+        }
+
+        // Create listing
+        const response = await fetch("/api/listings", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            imageUrls,
+            additionalContext: value.additionalContext,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to create listing");
+        }
+
+        const listing = await response.json();
+
+        // Navigate to the listing page
+        router.push(`/listings/${listing.id}`);
+      } catch (error) {
+        console.error("Submission error:", error);
+        alert(
+          error instanceof Error ? error.message : "Failed to create listing"
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
     },
   });
 
@@ -82,11 +125,16 @@ export function UploadCard() {
           </form.Field>
         </CardContent>
         <CardFooter className="justify-end gap-2">
-          <Button type="button" variant="outline" onClick={() => form.reset()}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => form.reset()}
+            disabled={isSubmitting}
+          >
             Reset
           </Button>
-          <Button type="submit" form="upload-item-form">
-            Start Listing
+          <Button type="submit" form="upload-item-form" disabled={isSubmitting}>
+            {isSubmitting ? "Creating Listing..." : "Start Listing"}
           </Button>
         </CardFooter>
       </form>

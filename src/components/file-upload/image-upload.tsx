@@ -16,6 +16,7 @@ export interface ImageFile {
   id: string;
   file: File;
   preview: string;
+  url?: string;
   progress: number;
   status: "uploading" | "completed" | "error";
   error?: string;
@@ -103,49 +104,100 @@ export function ImageUpload({
         setImages(updatedImages);
         onImagesChange?.(updatedImages);
 
-        // Simulate upload progress
+        // Upload images to Vercel Blob
         newImages.forEach((imageFile) => {
-          simulateUpload(imageFile);
+          uploadToBlob(imageFile);
         });
       }
     },
     [images, maxSize, maxFiles, onImagesChange]
   );
 
-  const simulateUpload = (imageFile: ImageFile) => {
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 20;
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(interval);
+  const uploadToBlob = async (imageFile: ImageFile) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", imageFile.file);
 
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable) {
+          const progress = (e.loaded / e.total) * 100;
+          setImages((prev) =>
+            prev.map((img) =>
+              img.id === imageFile.id ? { ...img, progress } : img
+            )
+          );
+        }
+      });
+
+      xhr.addEventListener("load", () => {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText);
+          setImages((prev) => {
+            const updatedImages = prev.map((img) =>
+              img.id === imageFile.id
+                ? {
+                    ...img,
+                    progress: 100,
+                    status: "completed" as const,
+                    url: response.url,
+                  }
+                : img
+            );
+
+            // Notify parent and check if all uploads are complete
+            onImagesChange?.(updatedImages);
+            if (updatedImages.every((img) => img.status === "completed")) {
+              onUploadComplete?.(updatedImages);
+            }
+
+            return updatedImages;
+          });
+        } else {
+          setImages((prev) =>
+            prev.map((img) =>
+              img.id === imageFile.id
+                ? {
+                    ...img,
+                    status: "error" as const,
+                    error: "Upload failed",
+                  }
+                : img
+            )
+          );
+        }
+      });
+
+      xhr.addEventListener("error", () => {
         setImages((prev) =>
           prev.map((img) =>
             img.id === imageFile.id
-              ? { ...img, progress: 100, status: "completed" as const }
+              ? {
+                  ...img,
+                  status: "error" as const,
+                  error: "Network error",
+                }
               : img
           )
         );
+      });
 
-        // Check if all uploads are complete
-        const updatedImages = images.map((img) =>
+      xhr.open("POST", "/api/upload");
+      xhr.send(formData);
+    } catch (error) {
+      setImages((prev) =>
+        prev.map((img) =>
           img.id === imageFile.id
-            ? { ...img, progress: 100, status: "completed" as const }
+            ? {
+                ...img,
+                status: "error" as const,
+                error: error instanceof Error ? error.message : "Upload failed",
+              }
             : img
-        );
-
-        if (updatedImages.every((img) => img.status === "completed")) {
-          onUploadComplete?.(updatedImages);
-        }
-      } else {
-        setImages((prev) =>
-          prev.map((img) =>
-            img.id === imageFile.id ? { ...img, progress } : img
-          )
-        );
-      }
-    }, 100);
+        )
+      );
+    }
   };
 
   const removeImage = useCallback((id: string) => {
