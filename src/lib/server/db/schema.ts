@@ -18,6 +18,10 @@ export const listings = pgTable("listings", {
     .primaryKey()
     .$defaultFn(() => nanoid()),
   imageUrls: text("image_urls").array().notNull(),
+  status: text("status")
+    .notNull()
+    .default("pending")
+    .$type<"pending" | "analyzing" | "completed" | "failed">(),
   title: text("title"),
   description: text("description"),
   category: text("category"),
@@ -34,6 +38,8 @@ export const listings = pgTable("listings", {
   listingPrice: numeric("listing_price", { precision: 10, scale: 2 }),
   pricingRationale: text("pricing_rationale"),
   similarItemsSearchTerms: text("similar_items_search_terms"),
+  originalProductLink: text("original_product_link"),
+  similarProductLinks: text("similar_product_links").array(),
   userContext: text("user_context"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

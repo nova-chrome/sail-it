@@ -1,7 +1,9 @@
 "use client";
 
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { CopyButton } from "~/components/copy-button";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -11,70 +13,54 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
-import { Listing } from "~/lib/server/db/schema";
+import { useTRPC } from "~/lib/client/trpc/client";
 
 export default function ListingPage() {
   const params = useParams();
   const router = useRouter();
   const listingId = params.id as string;
 
-  const [listing, setListing] = useState<Listing | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const trpc = useTRPC();
 
+  // Fetch listing data
+  const {
+    data: listing,
+    isLoading: isLoadingListing,
+    error: fetchError,
+    refetch,
+  } = useQuery(trpc.listings.getById.queryOptions({ id: listingId }));
+
+  // Mutation for analyzing the listing
+  const analyzeMutation = useMutation({
+    ...trpc.listings.analyze.mutationOptions(),
+    onSuccess: () => {
+      // Refetch the listing after successful analysis
+      refetch();
+    },
+  });
+
+  // Check if analysis is needed and trigger it
   useEffect(() => {
-    async function fetchAndAnalyzeListing() {
-      try {
-        // Fetch the listing
-        const listingResponse = await fetch(`/api/listings/${listingId}`);
-        if (!listingResponse.ok) {
-          throw new Error("Failed to fetch listing");
-        }
-        const listingData = await listingResponse.json();
-        setListing(listingData);
+    if (!listing) return;
 
-        // Check if listing has already been analyzed
-        const isAlreadyAnalyzed =
-          listingData.title &&
-          listingData.title !== "Processing..." &&
-          listingData.description &&
-          listingData.description !== "AI is analyzing your images...";
+    const needsAnalysis = listing.status === "pending";
 
-        if (isAlreadyAnalyzed) {
-          // Use existing analysis data
-          setIsAnalyzing(false);
-          return;
-        }
-
-        // Start AI analysis only if not already analyzed
-        const analysisResponse = await fetch("/api/analyze", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            listingId: listingData.id,
-            imageUrl: listingData.imageUrls[0], // Use first image for analysis
-            userContext: listingData.userContext,
-          }),
-        });
-
-        if (!analysisResponse.ok) {
-          throw new Error("Failed to analyze listing");
-        }
-
-        const updatedListing = await analysisResponse.json();
-        setListing(updatedListing);
-        setIsAnalyzing(false);
-      } catch (err) {
-        console.error("Error:", err);
-        setError(err instanceof Error ? err.message : "An error occurred");
-        setIsAnalyzing(false);
-      }
+    if (needsAnalysis && !analyzeMutation.isPending) {
+      // Start AI analysis only if status is pending
+      analyzeMutation.mutate({
+        listingId: listing.id,
+        imageUrls: listing.imageUrls, // Send all images for comprehensive analysis
+        userContext: listing.userContext ?? undefined,
+      });
     }
+  }, [listing, analyzeMutation]);
 
-    fetchAndAnalyzeListing();
-  }, [listingId]);
+  // Use the analyzed data if available, otherwise use the original listing data
+  const displayListing = analyzeMutation.data ?? listing;
+
+  const isAnalyzing =
+    analyzeMutation.isPending || displayListing?.status === "analyzing";
+  const error = fetchError?.message ?? analyzeMutation.error?.message;
 
   if (error) {
     return (
@@ -94,7 +80,7 @@ export default function ListingPage() {
     );
   }
 
-  if (!listing) {
+  if (isLoadingListing || !displayListing) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -108,25 +94,19 @@ export default function ListingPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="mb-6">
-          <Button variant="outline" onClick={() => router.push("/")}>
-            ← Back to Home
-          </Button>
-        </div>
-
         {/* Images Section */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Uploaded Images</CardTitle>
-            {listing.userContext && (
+            {displayListing.userContext && (
               <CardDescription className="mt-2">
-                <strong>Your Context:</strong> {listing.userContext}
+                <strong>Your Context:</strong> {displayListing.userContext}
               </CardDescription>
             )}
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {listing.imageUrls.map((url, index) => (
+              {displayListing.imageUrls.map((url: string, index: number) => (
                 <div
                   key={index}
                   className="aspect-square overflow-hidden rounded-lg bg-accent/50"
@@ -145,21 +125,34 @@ export default function ListingPage() {
         {/* Listing Details Section */}
         <Card>
           <CardHeader>
-            <CardTitle>
-              {isAnalyzing ? (
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-8 w-3/4" />
-                  <span className="text-sm text-muted-foreground">
-                    (Analyzing...)
-                  </span>
-                </div>
-              ) : (
-                listing.title
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1">
+                <CardTitle>
+                  {isAnalyzing ? (
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-8 w-3/4" />
+                      <span className="text-sm text-muted-foreground">
+                        (Analyzing...)
+                      </span>
+                    </div>
+                  ) : (
+                    displayListing.title
+                  )}
+                </CardTitle>
+                {!isAnalyzing && displayListing.category && (
+                  <CardDescription>
+                    Category: {displayListing.category}
+                  </CardDescription>
+                )}
+              </div>
+              {!isAnalyzing && displayListing.title && (
+                <CopyButton
+                  content={displayListing.title}
+                  label="Copy title"
+                  successMessage="Title copied!"
+                />
               )}
-            </CardTitle>
-            {!isAnalyzing && listing.category && (
-              <CardDescription>Category: {listing.category}</CardDescription>
-            )}
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             {isAnalyzing ? (
@@ -180,42 +173,53 @@ export default function ListingPage() {
               <>
                 {/* Description */}
                 <div>
-                  <h3 className="font-semibold text-lg mb-2">Description</h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-lg">Description</h3>
+                    {displayListing.description && (
+                      <CopyButton
+                        content={displayListing.description}
+                        label="Copy description"
+                        successMessage="Description copied!"
+                      />
+                    )}
+                  </div>
                   <p className="text-muted-foreground whitespace-pre-line">
-                    {listing.description}
+                    {displayListing.description}
                   </p>
                 </div>
 
                 {/* Details Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {listing.condition && (
+                  {displayListing.condition && (
                     <div className="border rounded-lg p-4">
                       <p className="text-sm text-muted-foreground">Condition</p>
-                      <p className="font-semibold">{listing.condition}</p>
+                      <p className="font-semibold">
+                        {displayListing.condition}
+                      </p>
                     </div>
                   )}
-                  {listing.brand && (
+                  {displayListing.brand && (
                     <div className="border rounded-lg p-4">
                       <p className="text-sm text-muted-foreground">Brand</p>
-                      <p className="font-semibold">{listing.brand}</p>
+                      <p className="font-semibold">{displayListing.brand}</p>
                     </div>
                   )}
-                  {listing.size && (
+                  {displayListing.size && (
                     <div className="border rounded-lg p-4">
                       <p className="text-sm text-muted-foreground">Size</p>
-                      <p className="font-semibold">{listing.size}</p>
+                      <p className="font-semibold">{displayListing.size}</p>
                     </div>
                   )}
-                  {listing.color && (
+                  {displayListing.color && (
                     <div className="border rounded-lg p-4">
                       <p className="text-sm text-muted-foreground">Color</p>
-                      <p className="font-semibold">{listing.color}</p>
+                      <p className="font-semibold">{displayListing.color}</p>
                     </div>
                   )}
-                  {listing.material && (
+                  {displayListing.material && (
                     <div className="border rounded-lg p-4">
                       <p className="text-sm text-muted-foreground">Material</p>
-                      <p className="font-semibold">{listing.material}</p>
+                      <p className="font-semibold">{displayListing.material}</p>
                     </div>
                   )}
                 </div>
@@ -224,66 +228,169 @@ export default function ListingPage() {
                 <div className="border-t pt-6">
                   <h3 className="font-semibold text-lg mb-4">Pricing</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {listing.estimatedOriginalPrice && (
+                    {displayListing.estimatedOriginalPrice && (
                       <div className="border rounded-lg p-4">
                         <p className="text-sm text-muted-foreground">
                           Original Price (est.)
                         </p>
                         <p className="text-2xl font-bold">
-                          ${listing.estimatedOriginalPrice}
+                          ${displayListing.estimatedOriginalPrice}
                         </p>
                       </div>
                     )}
-                    {listing.listingPrice && (
+                    {displayListing.listingPrice && (
                       <div className="border rounded-lg p-4 bg-primary/5">
                         <p className="text-sm text-muted-foreground">
                           Suggested Listing Price
                         </p>
                         <p className="text-2xl font-bold text-primary">
-                          ${listing.listingPrice}
+                          ${displayListing.listingPrice}
                         </p>
                       </div>
                     )}
                   </div>
-                  {listing.pricingRationale && (
+                  {displayListing.pricingRationale && (
                     <div className="mt-4 p-4 bg-accent/50 rounded-lg">
                       <p className="text-sm font-semibold mb-1">
                         Pricing Rationale
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {listing.pricingRationale}
+                        {displayListing.pricingRationale}
                       </p>
                     </div>
                   )}
                 </div>
 
                 {/* Keywords */}
-                {listing.keywords && (
+                {displayListing.keywords && (
                   <div>
-                    <h3 className="font-semibold text-lg mb-2">Keywords</h3>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-lg">Keywords</h3>
+                      <CopyButton
+                        content={displayListing.keywords}
+                        label="Copy keywords"
+                        successMessage="Keywords copied!"
+                      />
+                    </div>
                     <div className="flex flex-wrap gap-2">
-                      {listing.keywords.split(", ").map((keyword, index) => (
-                        <span
-                          key={index}
-                          className="px-3 py-1 bg-accent rounded-full text-sm"
-                        >
-                          {keyword}
-                        </span>
-                      ))}
+                      {displayListing.keywords
+                        .split(", ")
+                        .map((keyword: string, index: number) => (
+                          <span
+                            key={index}
+                            className="px-3 py-1 bg-accent rounded-full text-sm"
+                          >
+                            {keyword}
+                          </span>
+                        ))}
                     </div>
                   </div>
                 )}
 
-                {/* Similar Items Search Terms */}
-                {listing.similarItemsSearchTerms && (
-                  <div>
-                    <h3 className="font-semibold text-lg mb-2">
-                      Search Terms for Similar Items
+                {/* Original Product Link */}
+                {displayListing.originalProductLink && (
+                  <div className="border-t pt-6">
+                    <h3 className="font-semibold text-lg mb-3">
+                      Original Product
                     </h3>
+                    <a
+                      href={displayListing.originalProductLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                        <polyline points="15 3 21 3 21 9" />
+                        <line x1="10" y1="14" x2="21" y2="3" />
+                      </svg>
+                      View Original Product
+                    </a>
+                  </div>
+                )}
+
+                {/* Similar Product Links */}
+                {displayListing.similarProductLinks &&
+                  displayListing.similarProductLinks.length > 0 && (
+                    <div className="border-t pt-6">
+                      <h3 className="font-semibold text-lg mb-3">
+                        Similar Products Online
+                      </h3>
+                      <div className="grid gap-3">
+                        {displayListing.similarProductLinks.map(
+                          (linkStr: string, index: number) => {
+                            try {
+                              const link = JSON.parse(linkStr);
+                              return (
+                                <a
+                                  key={index}
+                                  href={link.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors group"
+                                >
+                                  <div className="flex-1">
+                                    <p className="font-medium group-hover:text-primary transition-colors">
+                                      {link.title}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {link.platform}
+                                    </p>
+                                  </div>
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="text-muted-foreground group-hover:text-primary transition-colors"
+                                  >
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                                    <polyline points="15 3 21 3 21 9" />
+                                    <line x1="10" y1="14" x2="21" y2="3" />
+                                  </svg>
+                                </a>
+                              );
+                            } catch {
+                              return null;
+                            }
+                          }
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                {/* Similar Items Search Terms */}
+                {displayListing.similarItemsSearchTerms && (
+                  <div className="border-t pt-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-lg">
+                        Search Terms for Similar Items
+                      </h3>
+                      <CopyButton
+                        content={displayListing.similarItemsSearchTerms}
+                        label="Copy search terms"
+                        successMessage="Search terms copied!"
+                      />
+                    </div>
                     <div className="flex flex-wrap gap-2">
-                      {listing.similarItemsSearchTerms
+                      {displayListing.similarItemsSearchTerms
                         .split(", ")
-                        .map((term, index) => (
+                        .map((term: string, index: number) => (
                           <span
                             key={index}
                             className="px-3 py-1 bg-primary/10 border border-primary/20 rounded-full text-sm"
