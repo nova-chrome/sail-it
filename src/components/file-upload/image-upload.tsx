@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, CloudUpload, TriangleAlert, XIcon } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
@@ -26,15 +26,17 @@ interface ImageUploadProps {
   maxSize?: number;
   accept?: string;
   className?: string;
+  value?: ImageFile[];
   onImagesChange?: (images: ImageFile[]) => void;
   onUploadComplete?: (images: ImageFile[]) => void;
 }
 
 export function ImageUpload({
   maxFiles = 10,
-  maxSize = 2 * 1024 * 1024, // 2MB
+  maxSize = 10 * 1024 * 1024, // 10MB
   accept = "image/*",
   className,
+  value,
   onImagesChange,
   onUploadComplete,
 }: ImageUploadProps) {
@@ -42,6 +44,17 @@ export function ImageUpload({
   const [isDragging, setIsDragging] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [isImagesOpen, setIsImagesOpen] = useState(false);
+
+  // Sync internal state with external value (for controlled mode)
+  useEffect(() => {
+    if (value !== undefined) {
+      setImages(value);
+      // Clear errors when value is reset to empty array
+      if (value.length === 0) {
+        setErrors([]);
+      }
+    }
+  }, [value]);
 
   const validateFile = (file: File): string | null => {
     if (!file.type.startsWith("image/")) {

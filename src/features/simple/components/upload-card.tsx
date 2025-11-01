@@ -55,6 +55,7 @@ export function UploadCard() {
           <form.Field name="images">
             {(field) => (
               <ImageUpload
+                value={field.state.value}
                 onImagesChange={(images) => field.handleChange(images)}
               />
             )}
