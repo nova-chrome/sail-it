@@ -1,10 +1,18 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Loader2, MoreHorizontal, Package, Trash2 } from "lucide-react";
+import {
+  AlertCircle,
+  Eye,
+  Loader2,
+  MoreHorizontal,
+  Package,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
 import { PropsWithChildren } from "react";
 import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +22,7 @@ import {
 } from "~/components/ui/dropdown-menu";
 import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
@@ -37,9 +46,12 @@ export function NavListings() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
-  const { data: listings = [], isLoading } = useQuery(
-    trpc.listings.getAll.queryOptions()
-  );
+  const {
+    data: listings = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery(trpc.listings.getAll.queryOptions());
 
   const deleteMutation = useMutation(
     trpc.listings.delete.mutationOptions({
@@ -54,7 +66,12 @@ export function NavListings() {
       <SidebarGroupLabel>Recent Listings</SidebarGroupLabel>
       <div className="overflow-y-auto flex-1 min-h-0 pr-1">
         <SidebarMenu className="gap-2">
-          <ListingStates isLoading={isLoading} isEmpty={!listings.length}>
+          <ListingStates
+            isLoading={isLoading}
+            isEmpty={!listings.length}
+            isError={isError}
+            onRetry={() => refetch()}
+          >
             {listings.map((listing) => (
               <SidebarMenuItem key={listing.id}>
                 <SidebarMenuButton asChild className="h-auto py-2">
@@ -119,12 +136,16 @@ export function NavListings() {
 interface ListingStatesProps {
   isLoading: boolean;
   isEmpty: boolean;
+  isError: boolean;
+  onRetry: () => void;
 }
 
 function ListingStates({
   children,
   isLoading,
   isEmpty,
+  isError,
+  onRetry,
 }: PropsWithChildren<ListingStatesProps>) {
   if (isLoading) {
     return (
@@ -133,6 +154,32 @@ function ListingStates({
         <ListingSkeleton />
         <ListingSkeleton />
       </>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Empty className="border border-destructive/20 animate-in fade-in-50 duration-500 md:p-8">
+        <EmptyHeader className="max-w-xs gap-2.5">
+          <EmptyMedia
+            variant="icon"
+            className="size-12 rounded-xl bg-destructive/10 text-destructive border-destructive/20 mb-3"
+          >
+            <AlertCircle />
+          </EmptyMedia>
+          <EmptyTitle className="text-base font-semibold">
+            Failed to Load Listings
+          </EmptyTitle>
+          <EmptyDescription className="text-xs/relaxed">
+            There was an error loading your listings. Please try again later.
+          </EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <Button onClick={onRetry} variant="outline" size="sm">
+            Retry
+          </Button>
+        </EmptyContent>
+      </Empty>
     );
   }
 
