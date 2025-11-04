@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm } from "@tanstack/react-form";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -28,9 +28,14 @@ const formSchema = z.object({
 export function UploadCard() {
   const router = useRouter();
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
 
   const createListingMutation = useMutation(
-    trpc.listings.create.mutationOptions()
+    trpc.listings.create.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries(trpc.listings.getAll.queryOptions());
+      },
+    })
   );
 
   const form = useForm({

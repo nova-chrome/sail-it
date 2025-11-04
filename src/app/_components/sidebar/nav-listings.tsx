@@ -1,10 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { differenceInDays, format, formatDistanceToNow } from "date-fns";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Loader2, MoreHorizontal, Trash2 } from "lucide-react";
 import Link from "next/link";
-
 import { Badge } from "~/components/ui/badge";
 import {
   DropdownMenu,
@@ -24,22 +22,23 @@ import {
 } from "~/components/ui/sidebar";
 import { Skeleton } from "~/components/ui/skeleton";
 import { useTRPC } from "~/lib/client/trpc/client";
-
-function formatTimestamp(date: Date): string {
-  const diffDays = differenceInDays(new Date(), date);
-
-  if (diffDays >= 7) {
-    return format(date, "P");
-  }
-
-  return formatDistanceToNow(date, { addSuffix: true });
-}
+import { formatTimestamp } from "~/utils/format-timestamp";
 
 export function NavListings() {
   const { isMobile } = useSidebar();
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
+
   const { data: listings = [], isLoading } = useQuery(
     trpc.listings.getAll.queryOptions()
+  );
+
+  const deleteMutation = useMutation(
+    trpc.listings.delete.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries(trpc.listings.getAll.queryOptions());
+      },
+    })
   );
 
   return (
@@ -98,7 +97,9 @@ export function NavListings() {
                       </a>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => deleteMutation.mutate({ id: listing.id })}
+                    >
                       <Trash2 className="text-muted-foreground" />
                       <span>Delete Listing</span>
                     </DropdownMenuItem>

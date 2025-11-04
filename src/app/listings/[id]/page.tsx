@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { CopyButton } from "~/components/copy-button";
@@ -21,6 +21,7 @@ export default function ListingPage() {
   const listingId = params.id as string;
 
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
 
   // Fetch listing data
   const {
@@ -31,13 +32,14 @@ export default function ListingPage() {
   } = useQuery(trpc.listings.getById.queryOptions({ id: listingId }));
 
   // Mutation for analyzing the listing
-  const analyzeMutation = useMutation({
-    ...trpc.listings.analyze.mutationOptions(),
-    onSuccess: () => {
-      // Refetch the listing after successful analysis
-      refetch();
-    },
-  });
+  const analyzeMutation = useMutation(
+    trpc.listings.analyze.mutationOptions({
+      onSuccess: () => {
+        refetch();
+        queryClient.invalidateQueries(trpc.listings.getAll.queryOptions());
+      },
+    })
+  );
 
   // Check if analysis is needed and trigger it
   useEffect(() => {

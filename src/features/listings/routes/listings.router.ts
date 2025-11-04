@@ -1,4 +1,5 @@
 import { TRPCError } from "@trpc/server";
+import { del } from "@vercel/blob";
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { listings } from "~/lib/server/db/schema";
@@ -17,7 +18,7 @@ const createListingInput = z.object({
   additionalContext: z.string().optional(),
 });
 
-const getByIdInput = z.object({
+const idInput = z.object({
   id: z.string(),
 });
 
@@ -36,6 +37,30 @@ export const listingsRouter = createTRPCRouter({
     }
 
     return data;
+  }),
+  getById: publicProcedure.input(idInput).query(async ({ ctx, input }) => {
+    const { data, error } = await tryCatch(
+      ctx.db.select().from(listings).where(eq(listings.id, input.id)).limit(1)
+    );
+
+    if (error) {
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch listing",
+        cause: error,
+      });
+    }
+
+    const listing = data[0];
+
+    if (!listing) {
+      throw new TRPCError({
+        code: "NOT_FOUND",
+        message: "Listing not found",
+      });
+    }
+
+    return listing;
   }),
   create: publicProcedure
     .input(createListingInput)
@@ -61,29 +86,30 @@ export const listingsRouter = createTRPCRouter({
 
       return data[0];
     }),
-  getById: publicProcedure.input(getByIdInput).query(async ({ ctx, input }) => {
+  delete: publicProcedure.input(idInput).mutation(async ({ ctx, input }) => {
     const { data, error } = await tryCatch(
-      ctx.db.select().from(listings).where(eq(listings.id, input.id)).limit(1)
+      ctx.db.delete(listings).where(eq(listings.id, input.id)).returning()
     );
 
     if (error) {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
-        message: "Failed to fetch listing",
+        message: "Failed to delete listing",
         cause: error,
       });
     }
 
-    const listing = data[0];
+    if (data[0].imageUrls.length > 0) {
+      const { error: deleteError } = await tryCatch(del(data[0].imageUrls));
 
-    if (!listing) {
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: "Listing not found",
-      });
+      if (deleteError) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to delete images",
+          cause: deleteError,
+        });
+      }
     }
-
-    return listing;
   }),
   analyze: publicProcedure
     .input(analyzeInput)
