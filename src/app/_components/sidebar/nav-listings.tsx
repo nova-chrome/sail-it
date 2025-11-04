@@ -1,8 +1,9 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Loader2, MoreHorizontal, Trash2 } from "lucide-react";
+import { Eye, Loader2, MoreHorizontal, Package, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { PropsWithChildren } from "react";
 import { Badge } from "~/components/ui/badge";
 import {
   DropdownMenu,
@@ -11,6 +12,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "~/components/ui/empty";
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -46,14 +54,8 @@ export function NavListings() {
       <SidebarGroupLabel>Recent Listings</SidebarGroupLabel>
       <div className="overflow-y-auto flex-1 min-h-0 pr-1">
         <SidebarMenu className="gap-2">
-          {isLoading ? (
-            <>
-              <ListingSkeleton />
-              <ListingSkeleton />
-              <ListingSkeleton />
-            </>
-          ) : (
-            listings.map((listing) => (
+          <ListingStates isLoading={isLoading} isEmpty={!listings.length}>
+            {listings.map((listing) => (
               <SidebarMenuItem key={listing.id}>
                 <SidebarMenuButton asChild className="h-auto py-2">
                   <Link href={`/listings/${listing.id}`}>
@@ -106,12 +108,57 @@ export function NavListings() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </SidebarMenuItem>
-            ))
-          )}
+            ))}
+          </ListingStates>
         </SidebarMenu>
       </div>
     </SidebarGroup>
   );
+}
+
+interface ListingStatesProps {
+  isLoading: boolean;
+  isEmpty: boolean;
+}
+
+function ListingStates({
+  children,
+  isLoading,
+  isEmpty,
+}: PropsWithChildren<ListingStatesProps>) {
+  if (isLoading) {
+    return (
+      <>
+        <ListingSkeleton />
+        <ListingSkeleton />
+        <ListingSkeleton />
+      </>
+    );
+  }
+
+  if (isEmpty) {
+    return (
+      <Empty className="border animate-in fade-in-50 duration-500 md:p-8">
+        <EmptyHeader className="max-w-xs gap-2.5">
+          <EmptyMedia
+            variant="icon"
+            className="size-12 rounded-xl bg-muted/60 text-muted-foreground border-border/50 mb-3"
+          >
+            <Package className="opacity-50" />
+          </EmptyMedia>
+          <EmptyTitle className="text-base font-semibold">
+            No Listings Yet
+          </EmptyTitle>
+          <EmptyDescription className="text-xs/relaxed">
+            Create your first listing to get started. Upload images and details
+            to showcase your items.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    );
+  }
+
+  return children;
 }
 
 function ListingSkeleton() {
