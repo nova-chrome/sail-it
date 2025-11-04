@@ -42,16 +42,11 @@ import { useTRPC } from "~/lib/client/trpc/client";
 import { formatTimestamp } from "~/utils/format-timestamp";
 
 export function NavListings() {
-  const { isMobile } = useSidebar();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const { isMobile } = useSidebar();
 
-  const {
-    data: listings = [],
-    isLoading,
-    isError,
-    refetch,
-  } = useQuery(trpc.listings.getAll.queryOptions());
+  const getAllListingsQuery = useQuery(trpc.listings.getAll.queryOptions());
 
   const deleteMutation = useMutation(
     trpc.listings.delete.mutationOptions({
@@ -67,12 +62,12 @@ export function NavListings() {
       <div className="overflow-y-auto flex-1 min-h-0 pr-1">
         <SidebarMenu className="gap-2">
           <ListingStates
-            isLoading={isLoading}
-            isEmpty={!listings.length}
-            isError={isError}
-            onRetry={() => refetch()}
+            isLoading={getAllListingsQuery.isLoading}
+            isEmpty={!getAllListingsQuery.data?.length}
+            isError={getAllListingsQuery.isError}
+            onRetry={() => getAllListingsQuery.refetch()}
           >
-            {listings.map((listing) => (
+            {getAllListingsQuery.data?.map((listing) => (
               <SidebarMenuItem key={listing.id}>
                 <SidebarMenuButton asChild className="h-auto py-2">
                   <Link href={`/listings/${listing.id}`}>
@@ -148,13 +143,9 @@ function ListingStates({
   onRetry,
 }: PropsWithChildren<ListingStatesProps>) {
   if (isLoading) {
-    return (
-      <>
-        <ListingSkeleton />
-        <ListingSkeleton />
-        <ListingSkeleton />
-      </>
-    );
+    return Array.from({ length: 3 }).map((_, index) => (
+      <ListingSkeleton key={index} />
+    ));
   }
 
   if (isError) {
