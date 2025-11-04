@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { differenceInDays, format, formatDistanceToNow } from "date-fns";
 import { Eye, Loader2, MoreHorizontal, Trash2 } from "lucide-react";
+import Link from "next/link";
 
 import { Badge } from "~/components/ui/badge";
 import {
@@ -56,7 +57,7 @@ export function NavListings() {
             listings.map((listing) => (
               <SidebarMenuItem key={listing.id}>
                 <SidebarMenuButton asChild className="h-auto py-2">
-                  <a href={`/listings/${listing.id}`}>
+                  <Link href={`/listings/${listing.id}`}>
                     <div className="flex flex-col gap-1 overflow-hidden flex-1">
                       <span className="truncate">
                         {listing.title || "Untitled Listing"}
@@ -76,7 +77,7 @@ export function NavListings() {
                         </span>
                       </div>
                     </div>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

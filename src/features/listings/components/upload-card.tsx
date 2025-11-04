@@ -5,12 +5,6 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import * as z from "zod";
-
-const formSchema = z.object({
-  images: z.array(z.any()).min(1, "At least one image is required"),
-  additionalContext: z.string(),
-});
-
 import { ImageFile, ImageUpload } from "~/components/file-upload/image-upload";
 import { Button } from "~/components/ui/button";
 import {
@@ -25,6 +19,11 @@ import { Field, FieldDescription, FieldLabel } from "~/components/ui/field";
 import { Textarea } from "~/components/ui/textarea";
 import { useTRPC } from "~/lib/client/trpc/client";
 import { tryCatch } from "~/utils/try-catch";
+
+const formSchema = z.object({
+  images: z.array(z.any()).min(1, "At least one image is required"),
+  additionalContext: z.string(),
+});
 
 export function UploadCard() {
   const router = useRouter();
