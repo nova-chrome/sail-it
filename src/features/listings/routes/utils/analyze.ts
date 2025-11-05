@@ -1,5 +1,5 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { generateObject } from "ai";
+import { generateObject, UserContent } from "ai";
 import z from "zod";
 
 export const MARKETPLACE_PROMPT = `You are an expert at analyzing items for online marketplaces. Analyze the provided image and generate comprehensive listing information that includes ALL fields a seller would need.
@@ -143,7 +143,7 @@ export async function analyzeListingWithOpenAI(
     ? `${MARKETPLACE_PROMPT}\n\nAdditional context from the user: ${userContext}\n\nPlease incorporate this context into your analysis.`
     : MARKETPLACE_PROMPT;
 
-  const content = [
+  const content: UserContent = [
     { type: "text" as const, text: prompt },
     ...imageUrls.map((url) => ({ type: "image" as const, image: url })),
   ];

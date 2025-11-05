@@ -45,10 +45,11 @@ export default function ListingPage() {
   useEffect(() => {
     if (!listing) return;
 
-    const needsAnalysis = listing.status === "pending";
+    const needsAnalysis =
+      listing.status === "pending" || listing.status === "analyzing";
 
     if (needsAnalysis && !analyzeMutation.isPending) {
-      // Start AI analysis only if status is pending
+      // Start AI analysis - router will check if already completed
       analyzeMutation.mutate({
         listingId: listing.id,
         imageUrls: listing.imageUrls, // Send all images for comprehensive analysis

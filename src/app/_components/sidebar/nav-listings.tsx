@@ -4,14 +4,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   Eye,
-  Loader2,
   MoreHorizontal,
   Package,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import { PropsWithChildren } from "react";
-import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import {
   DropdownMenu,
@@ -76,15 +74,6 @@ export function NavListings() {
                         {listing.title || "Untitled Listing"}
                       </span>
                       <div className="flex items-center gap-2">
-                        {listing.status === "analyzing" && (
-                          <Badge
-                            variant="default"
-                            className="text-xs flex items-center gap-1 w-fit"
-                          >
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            Analyzing
-                          </Badge>
-                        )}
                         <span className="text-xs text-muted-foreground truncate">
                           {formatTimestamp(listing.createdAt)}
                         </span>

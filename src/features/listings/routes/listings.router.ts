@@ -128,6 +128,37 @@ export const listingsRouter = createTRPCRouter({
         });
       }
 
+      // Check if listing is already completed
+      const { data: existingListing, error: fetchError } = await tryCatch(
+        ctx.db
+          .select()
+          .from(listings)
+          .where(eq(listings.id, input.listingId))
+          .limit(1)
+      );
+
+      if (fetchError) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch listing",
+          cause: fetchError,
+        });
+      }
+
+      const listing = existingListing[0];
+
+      if (!listing) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Listing not found",
+        });
+      }
+
+      // If already completed, return the existing listing without re-analyzing
+      if (listing.status === "completed") {
+        return listing;
+      }
+
       // Set status to analyzing
       await ctx.db
         .update(listings)

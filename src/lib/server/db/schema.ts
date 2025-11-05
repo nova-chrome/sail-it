@@ -13,6 +13,7 @@ export const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789");
 // The database is shared with other projects, so we need to prefix the tables to avoid conflicts
 export const pgTable = pgTableCreator((name) => `sail_it_${name}`);
 
+export type Listing = typeof listings.$inferSelect;
 export const listings = pgTable("listings", {
   id: varchar("id", { length: 21 })
     .primaryKey()
@@ -44,6 +45,3 @@ export const listings = pgTable("listings", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
-
-export type Listing = typeof listings.$inferSelect;
-export type NewListing = typeof listings.$inferInsert;
