@@ -3,8 +3,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, Package, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { PropsWithChildren } from "react";
+import { PropsWithChildren, useState } from "react";
 import { Button } from "~/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
 import {
   Empty,
   EmptyContent,
@@ -28,6 +36,10 @@ import { formatTimestamp } from "~/utils/format-timestamp";
 export function NavListings() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const [listingToDelete, setListingToDelete] = useState<{
+    id: string;
+    title: string | null;
+  } | null>(null);
 
   const getAllListingsQuery = useQuery(trpc.listings.getAll.queryOptions());
 
@@ -35,9 +47,16 @@ export function NavListings() {
     trpc.listings.delete.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries(trpc.listings.getAll.queryOptions());
+        setListingToDelete(null);
       },
     })
   );
+
+  const handleDelete = () => {
+    if (listingToDelete) {
+      deleteMutation.mutate({ id: listingToDelete.id });
+    }
+  };
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden flex flex-col">
@@ -68,7 +87,12 @@ export function NavListings() {
                 </SidebarMenuButton>
                 <SidebarMenuAction
                   className="top-1/2! -translate-y-1/2"
-                  onClick={() => deleteMutation.mutate({ id: listing.id })}
+                  onClick={() =>
+                    setListingToDelete({
+                      id: listing.id,
+                      title: listing.title,
+                    })
+                  }
                   showOnHover
                 >
                   <Trash2 />
@@ -79,6 +103,38 @@ export function NavListings() {
           </ListingStates>
         </SidebarMenu>
       </div>
+
+      <Dialog
+        open={!!listingToDelete}
+        onOpenChange={() => setListingToDelete(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Listing</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete &quot;
+              {listingToDelete?.title || "Untitled Listing"}&quot;? This action
+              cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setListingToDelete(null)}
+              disabled={deleteMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </SidebarGroup>
   );
 }
