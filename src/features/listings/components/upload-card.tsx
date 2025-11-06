@@ -74,7 +74,7 @@ export function UploadCard() {
       }
 
       // Navigate to the listing page
-      router.push(`/listings/${listing.id}`);
+      router.push(`/l/${listing.id}`);
     },
   });
 

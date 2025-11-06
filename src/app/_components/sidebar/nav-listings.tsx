@@ -1,13 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  AlertCircle,
-  Eye,
-  MoreHorizontal,
-  Package,
-  Trash2,
-} from "lucide-react";
+import { AlertCircle, MoreHorizontal, Package, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { PropsWithChildren } from "react";
 import { Button } from "~/components/ui/button";
@@ -15,7 +9,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import {
@@ -68,7 +61,7 @@ export function NavListings() {
             {getAllListingsQuery.data?.map((listing) => (
               <SidebarMenuItem key={listing.id}>
                 <SidebarMenuButton asChild className="h-auto py-2">
-                  <Link href={`/listings/${listing.id}`}>
+                  <Link href={`/l/${listing.id}`}>
                     <div className="flex flex-col gap-1 overflow-hidden flex-1">
                       <span className="truncate">
                         {listing.title || "Untitled Listing"}
@@ -93,13 +86,6 @@ export function NavListings() {
                     side={isMobile ? "bottom" : "right"}
                     align={isMobile ? "end" : "start"}
                   >
-                    <DropdownMenuItem asChild>
-                      <a href={`/listings/${listing.id}`}>
-                        <Eye className="text-muted-foreground" />
-                        <span>View Listing</span>
-                      </a>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={() => deleteMutation.mutate({ id: listing.id })}
                     >
