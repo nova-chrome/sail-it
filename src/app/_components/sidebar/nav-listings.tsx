@@ -1,16 +1,10 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, MoreHorizontal, Package, Trash2 } from "lucide-react";
+import { AlertCircle, Package, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { PropsWithChildren } from "react";
 import { Button } from "~/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu";
 import {
   Empty,
   EmptyContent,
@@ -26,7 +20,6 @@ import {
   SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "~/components/ui/sidebar";
 import { Skeleton } from "~/components/ui/skeleton";
 import { useTRPC } from "~/lib/client/trpc/client";
@@ -35,7 +28,6 @@ import { formatTimestamp } from "~/utils/format-timestamp";
 export function NavListings() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const { isMobile } = useSidebar();
 
   const getAllListingsQuery = useQuery(trpc.listings.getAll.queryOptions());
 
@@ -74,26 +66,14 @@ export function NavListings() {
                     </div>
                   </Link>
                 </SidebarMenuButton>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <SidebarMenuAction className="top-1/2! -translate-y-1/2">
-                      <MoreHorizontal />
-                      <span className="sr-only">More</span>
-                    </SidebarMenuAction>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    className="w-48"
-                    side={isMobile ? "bottom" : "right"}
-                    align={isMobile ? "end" : "start"}
-                  >
-                    <DropdownMenuItem
-                      onClick={() => deleteMutation.mutate({ id: listing.id })}
-                    >
-                      <Trash2 className="text-muted-foreground" />
-                      <span>Delete Listing</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <SidebarMenuAction
+                  className="top-1/2! -translate-y-1/2"
+                  onClick={() => deleteMutation.mutate({ id: listing.id })}
+                  showOnHover
+                >
+                  <Trash2 />
+                  <span className="sr-only">Delete Listing</span>
+                </SidebarMenuAction>
               </SidebarMenuItem>
             ))}
           </ListingStates>
