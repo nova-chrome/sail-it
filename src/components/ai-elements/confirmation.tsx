@@ -1,19 +1,24 @@
 "use client";
 
-import { Alert, AlertDescription } from "~/components/ui/alert";
-import { Button } from "~/components/ui/button";
-import { cn } from "~/lib/utils";
-import type { ToolUIPart } from "ai";
 import {
   type ComponentProps,
   createContext,
   type ReactNode,
   useContext,
 } from "react";
+import { Alert, AlertDescription } from "~/components/ui/alert";
+import { Button } from "~/components/ui/button";
+import { cn } from "~/lib/utils";
+
+// Define valid tool states based on current AI SDK
+type ToolState =
+  | "input-streaming"
+  | "input-available"
+  | "output-available"
+  | "output-error";
 
 type ConfirmationContextValue = {
-  approval: ToolUIPart["approval"];
-  state: ToolUIPart["state"];
+  state: ToolState;
 };
 
 const ConfirmationContext = createContext<ConfirmationContextValue | null>(
@@ -31,22 +36,21 @@ const useConfirmation = () => {
 };
 
 export type ConfirmationProps = ComponentProps<typeof Alert> & {
-  approval?: ToolUIPart["approval"];
-  state: ToolUIPart["state"];
+  state: ToolState;
 };
 
 export const Confirmation = ({
   className,
-  approval,
   state,
   ...props
 }: ConfirmationProps) => {
-  if (!approval || state === "input-streaming" || state === "input-available") {
+  // Only show for output states
+  if (state === "input-streaming" || state === "input-available") {
     return null;
   }
 
   return (
-    <ConfirmationContext.Provider value={{ approval, state }}>
+    <ConfirmationContext.Provider value={{ state }}>
       <Alert className={cn("flex flex-col gap-2", className)} {...props} />
     </ConfirmationContext.Provider>
   );
@@ -68,8 +72,8 @@ export type ConfirmationRequestProps = {
 export const ConfirmationRequest = ({ children }: ConfirmationRequestProps) => {
   const { state } = useConfirmation();
 
-  // Only show when approval is requested
-  if (state !== "approval-requested") {
+  // Show when input is available (waiting for processing)
+  if (state !== "input-available") {
     return null;
   }
 
@@ -83,15 +87,10 @@ export type ConfirmationAcceptedProps = {
 export const ConfirmationAccepted = ({
   children,
 }: ConfirmationAcceptedProps) => {
-  const { approval, state } = useConfirmation();
+  const { state } = useConfirmation();
 
-  // Only show when approved and in response states
-  if (
-    !approval?.approved ||
-    (state !== "approval-responded" &&
-      state !== "output-denied" &&
-      state !== "output-available")
-  ) {
+  // Show when output is available (success state)
+  if (state !== "output-available") {
     return null;
   }
 
@@ -105,15 +104,10 @@ export type ConfirmationRejectedProps = {
 export const ConfirmationRejected = ({
   children,
 }: ConfirmationRejectedProps) => {
-  const { approval, state } = useConfirmation();
+  const { state } = useConfirmation();
 
-  // Only show when rejected and in response states
-  if (
-    approval?.approved !== false ||
-    (state !== "approval-responded" &&
-      state !== "output-denied" &&
-      state !== "output-available")
-  ) {
+  // Show when there's an output error
+  if (state !== "output-error") {
     return null;
   }
 
@@ -128,8 +122,8 @@ export const ConfirmationActions = ({
 }: ConfirmationActionsProps) => {
   const { state } = useConfirmation();
 
-  // Only show when approval is requested
-  if (state !== "approval-requested") {
+  // Show actions when input is available (waiting state)
+  if (state !== "input-available") {
     return null;
   }
 
